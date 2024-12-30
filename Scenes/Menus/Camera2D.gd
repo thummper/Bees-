@@ -10,13 +10,13 @@ var _target_zoom: float = 1.0
 
 func _unhandled_input(event) -> void:
 	if event is InputEventMouseMotion:
-		if event.button_mask == BUTTON_MASK_RIGHT:
+		if event.button_mask == MOUSE_BUTTON_MASK_RIGHT:
 			position -= event.relative * zoom;
 	if event is InputEventMouseButton:
 		if event.is_pressed():
-			if event.button_index == BUTTON_WHEEL_UP:
+			if event.button_index == MOUSE_BUTTON_WHEEL_UP:
 				zoomIn();
-			if event.button_index == BUTTON_WHEEL_DOWN:
+			if event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 				zoomOut();
 				
 				

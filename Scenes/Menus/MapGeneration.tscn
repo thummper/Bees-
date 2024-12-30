@@ -1,25 +1,26 @@
-[gd_scene load_steps=4 format=2]
+[gd_scene load_steps=4 format=3 uid="uid://cb3gsyxv53s4q"]
 
-[ext_resource path="res://Scripts/Menus/MapWrapper.gd" type="Script" id=1]
-[ext_resource path="res://Scripts/Menus/MapGeneration.gd" type="Script" id=2]
-[ext_resource path="res://Scenes/Menus/Camera2D.gd" type="Script" id=3]
+[ext_resource type="Script" path="res://Scripts/Menus/MapWrapper.gd" id="1"]
+[ext_resource type="Script" path="res://Scripts/Menus/MapGeneration.gd" id="2"]
+[ext_resource type="Script" path="res://Scenes/Menus/Camera2D.gd" id="3"]
 
 [node name="Node2D" type="Control"]
-script = ExtResource( 1 )
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1")
 
 [node name="Node2D" type="Node2D" parent="."]
-script = ExtResource( 2 )
+script = ExtResource("2")
 width = 10000
 height = 10000
 numPoints = 500
 maxRelax = 0
 
 [node name="Camera2D" type="Camera2D" parent="Node2D"]
-current = true
-zoom = Vector2( 100, 100 )
-drag_margin_h_enabled = true
-drag_margin_v_enabled = true
-smoothing_enabled = true
-smoothing_speed = 10.0
+zoom = Vector2(100, 100)
+position_smoothing_enabled = true
+position_smoothing_speed = 10.0
+drag_horizontal_enabled = true
+drag_vertical_enabled = true
 editor_draw_drag_margin = true
-script = ExtResource( 3 )
+script = ExtResource("3")

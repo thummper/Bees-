@@ -1,4 +1,4 @@
-extends Reference
+extends RefCounted
 
 class_name Delaunay
 
@@ -81,7 +81,7 @@ class Triangle:
 class VoronoiSite:
 	var color: Color
 	var center: Vector2
-	var polygon: PoolVector2Array # points in absolute position, clockwise
+	var polygon: PackedVector2Array # points in absolute position, clockwise
 	var source_triangles: Array # of Triangle's that create this site internally
 	var neighbours: Array # of VoronoiEdge
 	
@@ -93,8 +93,8 @@ class VoronoiSite:
 		var db := center.direction_to(b.center).angle()
 		return da < db # clockwise sort
 	
-	func get_relative_polygon() -> PoolVector2Array: # return points in relative position to center
-		var polygon_local: PoolVector2Array
+	func get_relative_polygon() -> PackedVector2Array: # return points in relative position to center
+		var polygon_local: PackedVector2Array
 		for point in polygon:
 			polygon_local.append(point - center)
 		return polygon_local
@@ -122,13 +122,13 @@ class VoronoiEdge:
 		return (a + b) * 0.5
 	
 	func normal() -> Vector2:
-		return a.direction_to(b).tangent()
+		return a.direction_to(b).orthogonal();
 
 
 # ==== PUBLIC STATIC FUNCTIONS ====
 
 # calculates rect that contains all given points
-static func calculate_rect(points: PoolVector2Array, padding: float = 0.0) -> Rect2:
+static func calculate_rect(points: PackedVector2Array, padding: float = 0.0) -> Rect2:
 	var rect := Rect2(points[0], Vector2.ZERO)
 	for point in points:
 		rect = rect.expand(point)
@@ -136,7 +136,7 @@ static func calculate_rect(points: PoolVector2Array, padding: float = 0.0) -> Re
 
 
 # ==== PUBLIC VARIABLES ====
-var points: PoolVector2Array
+var points: PackedVector2Array
 
 
 # ==== PRIVATE VARIABLES ====
@@ -149,7 +149,7 @@ var _rect_super_triangle2: Triangle
 
 # ==== CONSTRUCTOR ====
 func _init(rect := Rect2()):
-	if (!rect.has_no_area()):
+	if (!rect.has_area()):
 		set_rectangle(rect)
 
 
@@ -193,19 +193,19 @@ func is_border_site(site: VoronoiSite) -> bool:
 	return !_rect.encloses(site.get_boundary())
 
 ### XN: Helper function to get the site polygons or if the site is a border site, get the clipped polygon.
-func get_polygon_site(site: VoronoiSite) -> PoolVector2Array:
+func get_polygon_site(site: VoronoiSite) -> PackedVector2Array:
 	if !is_border_site(site):
 		return site.polygon
 
 	# reconstruct the bounding rectangle into polygon
-	var bound_rect = PoolVector2Array([
+	var bound_rect = PackedVector2Array([
 		_rect.position, 
 		_rect.position + Vector2(_rect.size.x, 0),
 		_rect.end,
 		_rect.position + Vector2(0, _rect.size.y),
 		])
-	
-	var intersects = Geometry.intersect_polygons_2d(site.polygon, bound_rect)
+		
+	var intersects = Geometry2D.intersect_polygons(site.polygon, bound_rect)
 	if intersects.size() > 1 : 
 		print_debug("Warning: more than 1 intersect areas, return the first intersect area")
 	
@@ -224,7 +224,7 @@ func triangulate() -> Array: # of Triangle
 	var triangulation: Array # of Triangle
 	
 	# calculate rectangle if none
-	if _rect.has_no_area():
+	if !_rect.has_area():
 		set_rectangle(calculate_rect(points))
 	
 	triangulation.append(_rect_super_triangle1)
@@ -251,7 +251,7 @@ func triangulate() -> Array: # of Triangle
 func make_voronoi(triangulation: Array) -> Array: # of VoronoiSite
 	var sites: Array
 
-	var completion_counter: Array # of Vector2, no PoolVector2Array to allow more oeprations
+	var completion_counter: Array # of Vector2, no PackedVector2Array to allow more oeprations
 	var triangle_usage: Dictionary # of Triangle and Array[VoronoiSite], used for neighbour scan
 	for triangle in triangulation:
 		triangle_usage[triangle] = []
@@ -277,9 +277,9 @@ func make_voronoi(triangulation: Array) -> Array: # of VoronoiSite
 		if !is_complete:
 			continue # do not add sites without complete polygon, usually only corner sites than come from Rect boundary
 		
-		site.source_triangles.sort_custom(site, "_sort_source_triangles")
+		site.source_triangles.sort_custom(Callable(site, "_sort_source_triangles"))
 		
-		var polygon: PoolVector2Array
+		var polygon: PackedVector2Array
 		for triangle in site.source_triangles:
 			polygon.append(triangle.center)
 			triangle_usage[triangle].append(site)
@@ -369,7 +369,7 @@ func _calculate_super_triangle() -> Triangle:
 	# extend rectangle to square
 	var a := maxp.x - minp.x
 	var b := maxp.y - minp.y
-	var hd := abs(a - b) * 0.5
+	var hd = abs(a - b) * 0.5
 	if a > b:
 		minp.y = minp.y - hd
 		maxp.y = maxp.y + hd

@@ -1,23 +1,51 @@
 extends Node2D
-const Delaunator = preload("res://Scripts/Delaunator.gd");
+
 
 
 const cell = preload("res://Scripts/Cell.gd");
 
-export var width = 1204;
-export var height = 1024;
-export var numPoints = 100;
-var allPoints = PoolVector2Array()
+@export var width = 1204;
+@export var height = 1024;
+@export var numPoints = 100;
+var allPoints = PackedVector2Array()
 var delaunay;
 var relaxCounter = 0;
-export var maxRelax = 4;
+@export var maxRelax = 4;
 var cells = [];
 
 var triangles = [];
 var sites = [];
 
 
-var moistureMap = OpenSimplexNoise.new()
+var moistureMap = FastNoiseLite.new()
+
+
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	# Generate random points within a region
+	generateMap();
+
+func generateMap():
+	# 1 - Generate points
+	generatePoints();
+	
+	# Print all points
+	for p in allPoints:
+		print("DEBUG POINT: ", p.x, p.y);
+	
+	generateVoronoi();
+	#assignNeighbours();
+	
+	
+
+
+	
+	
+	
+	
+#	while(relaxCounter < maxRelax):
+#		relaxMap();
+#		relaxCounter += 1;
 
 
 
@@ -25,35 +53,37 @@ var moistureMap = OpenSimplexNoise.new()
 func generateVoronoi():
 	
 	moistureMap.seed = 420;
-	moistureMap.period = 20.0;
-	moistureMap.persistence = 0.8;
-
-	delaunay = Delaunay.new(Rect2(0,0,width,height));
-	for p in allPoints:
-		delaunay.add_point(p);
-	triangles = delaunay.triangulate();
-	sites = delaunay.make_voronoi(triangles);
-	
-	# Assign moisture to each cell
-	for s in sites:
-		var n = moistureMap.get_noise_2d(s.center.x, s.center.y)
-		s.moisture = n;
+#	moistureMap.period = 20.0;
+#	moistureMap.persistence = 0.8;
 	
 	
-	# Generate an equator
-	var m = rand_range(-4, 4)
-	
-	var center = Vector2(width/2, height/2)
-	
-	var c = (center.y / 2) - ((center.x / 2) * m);
-	 
-	var equatorStart = Vector2(0, c);
-	var equatorEnd = Vector2(width, (width * m) + c)
-	
-	
-	for s in sites:
-		var dist = perpendicularDist(s.center, m, c);
-		
+	delaunay = Geometry2D.triangulate_delaunay(allPoints);
+	print_debug(delaunay)
+#	delaunay = Delaunay.new(Rect2(0,0,width,height));
+#	for p in allPoints:
+#		delaunay.add_point(p);
+#	triangles = delaunay.triangulate();
+#	sites = delaunay.make_voronoi(triangles);
+#
+#	# Assign moisture to each cell
+#	for s in sites:
+#		var n = moistureMap.get_noise_2d(s.center.x, s.center.y)
+#		s.moisture = n;
+#
+#
+#	# Generate an equator
+#	var m = randf_range(-4, 4)
+#
+#	var center = Vector2(width/2, height/2)
+#
+#	var c = (center.y / 2) - ((center.x / 2) * m);
+#	var equatorStart = Vector2(0, c);
+#	var equatorEnd = Vector2(width, (width * m) + c)
+#
+#
+#	for s in sites:
+#		var dist = perpendicularDist(s.center, m, c);
+#
 	
 
 
@@ -80,57 +110,23 @@ func perpendicularDist(point1, m, _c):
 		#print("CELL: ", c.vertices);
 		
 		
-	while relaxCounter < maxRelax:
-		lloydRelaxation();
-		relaxCounter += 1;	
+#	while relaxCounter < maxRelax:
+#		lloydRelaxation();
+#		relaxCounter += 1;	
 
 func generatePoints():
 
 	
 	for n in range(numPoints):
-		var x = rand_range(0, width);
-		var y = rand_range(0, height);
+		var x = randf_range(0, width);
+		var y = randf_range(0, height);
 		print("POINT: ", x, y);
 		var point = Vector2(x, y);
 		allPoints.append(point);
 		
-func lloydRelaxation():
-	# Iterate over cells and average coords
-	var pointsFormatted = [];
-	var newPoints = [];
-	for c in cells:
-		var xTotal = 0;
-		var yTotal = 0;
-		
-		for v in c.vertices:
-			# P sure v is an index for something
-			# print(v[0], " ", v[1])
-			xTotal += v[0];
-			yTotal += v[1];
-			
-		xTotal /= c.vertices.size();
-		yTotal /= c.vertices.size();
-		
-		xTotal = round(xTotal);
-		yTotal = round(yTotal);
-		
-		
-		newPoints.push_back(Vector2(xTotal, yTotal))
-		
-		pointsFormatted.push_back(xTotal);
-		pointsFormatted.push_back(yTotal);
-		
-	# Update the voronoi
-	delaunay.coords = pointsFormatted;
-	# print(pointsFormatted);
-	allPoints = newPoints;
-	delaunay = Delaunator.new(allPoints);
-	#delaunay.update();
-	assembleCells(allPoints, delaunay);
+
 	
-	
-func relaxMap():
-	lloydRelaxation();
+
 	
 func assignNeighbours():
 	for c in range(0, cells.size()):
@@ -147,7 +143,7 @@ func assignNeighbours():
 func _unhandled_input(event):
 	if event is InputEventMouseButton:
 		if event.is_pressed():
-			if event.button_index == BUTTON_LEFT:
+			if event.button_index == MOUSE_BUTTON_LEFT:
 				print("MOUSE CLICKED: ", event.global_position)
 				highlightClicked(get_global_mouse_position())
 #func _input(event):
@@ -170,41 +166,18 @@ func highlightClicked(pos):
 	var boundary = closest.get_boundary()
 	if(boundary.has_point(pos)):
 		closest.color = Color(255, 0, 0);
-		update();
 			
 	print("CLOSEST: ", closest);
 	
 
 
 
-func generateMap():
-	# 1 - Generate points
-	generatePoints();
-	
-	# Print all points
-	for p in allPoints:
-		print("DEBUG POINT: ", p.x, p.y);
-	
-	generateVoronoi();
-	assignNeighbours();
-	
-	
-
-
-	
-	
-	
-	
-	while(relaxCounter < maxRelax):
-		relaxMap();
-		relaxCounter += 1;
 
 
 
-# Called when the node enters the scene tree for the first time.
-func _ready():
-	# Generate random points within a region
-	generateMap();
+
+
+
 
 	
 	
@@ -214,7 +187,7 @@ func _draw():
 		for site in sites:
 			if !delaunay.is_border_site(site):
 				var color = site.color;
-				if color == Color.black:
+				if color == Color.BLACK:
 					color = Color(randf(), randf(), randf(), 1)
 				draw_polygon(site.polygon, [color]);
 		
@@ -263,7 +236,7 @@ func assembleCells(points, delaunay):
 			var c = cell.new(points[p]);
 			c.vertices = vertices;
 			c.triangles = triangles;
-			var voronoi_cell = PoolVector2Array()
+			var voronoi_cell = PackedVector2Array()
 			for vertice in vertices:
 				voronoi_cell.append(Vector2(vertice[0], vertice[1]))			
 			c.cell = voronoi_cell;
@@ -290,12 +263,12 @@ func draw_voronoi_cells(points, delaunay):
 
 		if triangles.size() > 2:
 			var color = Color(randf(), randf(), randf(), 1)
-			var voronoi_cell = PoolVector2Array()
+			var voronoi_cell = PackedVector2Array()
 			for vertice in vertices:
 				voronoi_cell.append(Vector2(vertice[0], vertice[1]))
 				
 			print(voronoi_cell);
-			draw_polygon(voronoi_cell, PoolColorArray([color]))
+			draw_polygon(voronoi_cell, PackedColorArray([color]))
 			
 			
 func draw_voronoi_cells_convex_hull(points, delaunay):
@@ -322,10 +295,10 @@ func draw_voronoi_cells_convex_hull(points, delaunay):
 
 		if triangles.size() > 2:
 			var color = Color(randf(), randf(), randf(), 1)
-			var voronoi_cell = PoolVector2Array()
+			var voronoi_cell = PackedVector2Array()
 			for vertice in vertices:
 				voronoi_cell.append(Vector2(vertice[0], vertice[1]))
-			draw_polygon(voronoi_cell, PoolColorArray([color]))			
+			draw_polygon(voronoi_cell, PackedColorArray([color]))			
 
 func draw_points():
 	for point in allPoints:
@@ -338,7 +311,7 @@ func draw_triangle_centers():
 			Vector2(
 				triangle_center(allPoints, delaunay, t)[0],
 				triangle_center(allPoints, delaunay, t)[1]
-			), 5, Color.white)
+			), 5, Color.WHITE)
 		draw_circle(
 			Vector2(
 				triangle_center(allPoints, delaunay, t)[0],

@@ -6,38 +6,23 @@
 ;   [section] ; section goes between []
 ;   param=value ; assign values to parameters
 
-config_version=4
-
-_global_script_classes=[ {
-"base": "Reference",
-"class": "Delaunator",
-"language": "GDScript",
-"path": "res://Scripts/Delaunator.gd"
-}, {
-"base": "Reference",
-"class": "Delaunay",
-"language": "GDScript",
-"path": "res://addons/gdDelaunay/Delaunay.gd"
-} ]
-_global_script_class_icons={
-"Delaunator": "",
-"Delaunay": ""
-}
+config_version=5
 
 [application]
 
 config/name="Bees Godot"
 run/main_scene="res://Scenes/Menus/MapGeneration.tscn"
+config/features=PackedStringArray("4.0")
 config/icon="res://icon.png"
 
 [display]
 
-window/size/width=1980
-window/size/height=1080
+window/size/viewport_width=1980
+window/size/viewport_height=1080
 
 [editor_plugins]
 
-enabled=PoolStringArray( "res://addons/wakatime/plugin.cfg" )
+enabled=PackedStringArray("res://addons/wakatime/plugin.cfg")
 
 [gui]
 
@@ -49,4 +34,4 @@ common/enable_pause_aware_picking=true
 
 [rendering]
 
-environment/default_environment="res://default_env.tres"
+environment/defaults/default_environment="res://default_env.tres"
